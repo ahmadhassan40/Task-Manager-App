@@ -9,6 +9,7 @@ import { createTable, addTaskToDB } from './db/database';
 
 const AppContent = () => {
   const [taskTitle, setTaskTitle] = useState('');
+  const [validationMessage, setValidationMessage] = useState('');
   const dispatch = useDispatch();
   const tasks = useSelector((state) => state.tasks.list); // Select tasks from Redux
 
@@ -19,16 +20,26 @@ const AppContent = () => {
   }, [dispatch]);
 
   const handleAddTask = async () => {
-    if (!taskTitle.trim()) return; // Prevent adding empty tasks
-
+    // Regex to match only alphabets, numeric digits, and spaces
+    const isValidTask = /^[A-Za-z0-9\s]+$/.test(taskTitle.trim());
+  
+    // Check if the task title is valid and not just whitespace
+    if (!isValidTask || taskTitle.trim().length === 0) {
+      setValidationMessage("Task title can only contain letters, numbers, and spaces, and cannot be empty.");
+      return; // Prevent adding an invalid task
+    }
+  
     try {
       const newTask = await addTaskToDB({ title: taskTitle });
       dispatch(addTask(newTask)); // Add task to Redux state
       setTaskTitle(''); // Clear input field
+      setValidationMessage(''); // Clear validation message
     } catch (error) {
       console.error('Error adding task:', error);
     }
   };
+  
+  
 
   return (
     <View style={styles.container}>
@@ -39,6 +50,7 @@ const AppContent = () => {
         value={taskTitle}
         onChangeText={setTaskTitle}
       />
+      {validationMessage ? <Text style={styles.error}>{validationMessage}</Text> : null}
       <Button title="Add Task" onPress={handleAddTask} />
       <FlatList
         data={tasks}
@@ -79,6 +91,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#ffffff',
     fontSize: 16,
+  },
+  error: {
+    color: 'red',
+    marginTop: 10,
   },
 });
 
